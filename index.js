@@ -56,6 +56,7 @@ const UserSchema = new mongoose.Schema({
   name: { type: String },
   avatar: { type: String },
   authProvider: { type: String, enum: ['local', 'google', 'github'], default: 'local' },
+  role: { type: String, enum: ['user', 'admin'], default: 'user' },
 });
 
 const User = mongoose.models.User || mongoose.model('User', UserSchema);
@@ -207,7 +208,7 @@ app.post('/api/auth/login', async (req, res) => {
     if (!user.password) return res.status(400).json({ message: `Utilisez ${user.authProvider}.` });
     if (!(await bcrypt.compare(password, user.password))) return res.status(400).json({ message: "Mot de passe incorrect." });
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user._id, email: user.email, name: user.name, avatar: user.avatar } });
+    res.json({ token, user: { id: user._id, email: user.email, name: user.name, avatar: user.avatar, role: user.role } });
   } catch (e) { res.status(500).json({ message: "Erreur serveur." }); }
 });
 
