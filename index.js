@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const GitHubStrategy = require('passport-github2').Strategy;
@@ -60,6 +61,7 @@ const UserSchema = new mongoose.Schema({
 });
 
 const User = mongoose.models.User || mongoose.model('User', UserSchema);
+const PROVISIONING_TOKEN_TTL = 5 * 60;
 
 // --- 3. CONFIGURATION PASSPORT ---
 const GOOGLE_ENABLED = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
@@ -335,6 +337,35 @@ const authenticateToken = (req, res, next) => {
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
   const user = await User.findById(req.userId).select('-password');
   res.json({ user });
+});
+
+app.post('/api/auth/provisioning-token', authenticateToken, async (req, res) => {
+  try {
+    const gatewayHardwareId = String(req.body?.gatewayHardwareId || '').trim().toUpperCase();
+
+    if (!gatewayHardwareId || !/^GW-[A-Z0-9]+$/.test(gatewayHardwareId)) {
+      return res.status(400).json({ message: 'gatewayHardwareId invalide.' });
+    }
+
+    const token = jwt.sign(
+      {
+        type: 'gateway_provisioning',
+        jti: crypto.randomUUID(),
+        id: req.userId,
+        gatewayHardwareId,
+      },
+      JWT_SECRET,
+      { expiresIn: PROVISIONING_TOKEN_TTL }
+    );
+
+    res.json({
+      token,
+      expiresIn: PROVISIONING_TOKEN_TTL,
+      gatewayHardwareId,
+    });
+  } catch (e) {
+    res.status(500).json({ message: 'Erreur serveur.' });
+  }
 });
 
 app.get('/', (req, res) => res.send("API EauSûre Online 💧"));
