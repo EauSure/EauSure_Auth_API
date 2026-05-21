@@ -3,7 +3,6 @@
 <img
   src="eausure_header.svg"
   alt="Logo officiel EauSûre"
-  width="88"
 />
 
 <br/>
