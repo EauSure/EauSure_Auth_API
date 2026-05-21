@@ -1,7 +1,7 @@
 <div align="center">
 
 <img
-  src="../eausure_official_logo.svg"
+  src="eausure_header.svg"
   alt="Logo officiel EauSûre"
   width="88"
 />
